@@ -1,17 +1,23 @@
 package com.example.jasper.controller;
 
+import com.example.jasper.model.ItemJR;
 import io.minio.MinioClient;
 import io.minio.errors.MinioException;
 import net.sf.jasperreports.engine.*;
+import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
 import net.sf.jasperreports.engine.util.JRLoader;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.*;
+import java.math.BigDecimal;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 @RestController
 public class JasperController {
@@ -19,14 +25,26 @@ public class JasperController {
     @PostMapping(value = "/jasper/generate")
     public boolean generate() {
 
-        HashMap<String, Object> hashMap = new HashMap<>();
-        hashMap.put("CUST_NAME",                      "เดชาธร");
-        hashMap.put("CUST_LASTNAME",                  "น้ำใจ");
-        hashMap.put("CUST_AGE",                       25);
+        List<ItemJR> itemJRList = new ArrayList();
+        for(int i = 1 ; i <100 ;i++){
+            ItemJR itemJR = new ItemJR()
+                    .setItemName("มือถือ"+i)
+                    .setItemPrice(BigDecimal.valueOf(10000.00).add(BigDecimal.valueOf(i)));
+            itemJRList.add(itemJR);
+        }
+
+        JRBeanCollectionDataSource itemDataSource = new JRBeanCollectionDataSource(itemJRList);
+
+        HashMap<String, Object> paramaters = new HashMap<>();
+        paramaters.put("CUST_NAME",                      "เดชาธร");
+        paramaters.put("CUST_LASTNAME",                  "น้ำใจ");
+        paramaters.put("CUST_AGE",                       25);
+        paramaters.put("ItemDataSource",                 itemDataSource);
+
 
         try {
             JasperReport jasperReport = (JasperReport) JRLoader.loadObject(new FileInputStream("src/main/resources/templates/myReport.jasper"));
-            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, hashMap, new JREmptyDataSource());
+            JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, paramaters, new JREmptyDataSource());
             byte[] source = JasperExportManager.exportReportToPdf(jasperPrint);
             InputStream myInputStream = new ByteArrayInputStream(source);
 
